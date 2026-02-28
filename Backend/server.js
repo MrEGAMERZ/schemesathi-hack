@@ -38,10 +38,7 @@ app.use(express.json({ limit: '2mb' }));
 app.use('/schemes', schemesRouter);
 app.use('/eligibility-check', eligibilityRouter);
 app.use('/recommend', recommendRouter);
-app.use('/simplify', aiRouter);
-app.use('/translate', aiRouter);
-app.use('/generate-faq', aiRouter);
-app.use('/chatbot', aiRouter);
+app.use('/', aiRouter);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
