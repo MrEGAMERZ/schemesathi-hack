@@ -1,0 +1,13 @@
+# dependencies
+node_modules/
+
+# environment
+.env
+firebase/serviceAccountKey.json
+
+# logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store

@@ -1,0 +1,42 @@
+.scheme-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.scheme-card__body {
+    padding: 1.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.scheme-card__badge {
+    align-self: flex-start;
+}
+
+.scheme-card__name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    line-height: 1.4;
+}
+
+.scheme-card__summary {
+    font-size: 0.88rem;
+    color: var(--gray-500);
+    line-height: 1.55;
+    flex: 1;
+}
+
+.scheme-card__footer {
+    padding: 0 1.5rem 1.5rem;
+}
+
+.scheme-card__btn {
+    width: 100%;
+    justify-content: center;
+    font-size: 0.85rem;
+    padding: 0.55rem 1rem;
+}
