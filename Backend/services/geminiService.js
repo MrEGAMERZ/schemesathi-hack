@@ -19,11 +19,11 @@ const callGemini = async (prompt, config = {}, retries = 3) => {
                 {
                     contents: [{ parts: [{ text: prompt }] }],
                     generationConfig: {
-                        maxOutputTokens: config.maxTokens || 512,
-                        temperature: 0.4,
+                        maxOutputTokens: config.maxTokens || 2048,
+                        temperature: config.temperature ?? 0.4,
                     },
                 },
-                { timeout: 30000 }
+                { timeout: 60000 }
             );
 
             const text =
@@ -43,20 +43,20 @@ const callGemini = async (prompt, config = {}, retries = 3) => {
 };
 
 const simplifyScheme = async (description) => {
-    const prompt = `Summarize the following government scheme in simple language suitable for rural citizens. Use short sentences and bullet points. Keep it under 200 words.
+    const prompt = `Summarize the following government scheme in simple language suitable for rural citizens. Use short sentences and bullet points. Keep it under 200 words. Always respond in English.
 
 Scheme: ${description}`;
-    return callGemini(prompt);
+    return callGemini(prompt, { maxTokens: 1024 });
 };
 
 /**
  * Explain a scheme like the user is 15 years old
  */
 const explainLikeIAm15 = async (description) => {
-    const prompt = `Explain the following government scheme as if I am a 15-year old student. Use very simple analogies, basic terms, and keep it extremely engaging and clear. Under 150 words.
+    const prompt = `Explain the following government scheme as if I am a 15-year old student. Use very simple analogies, basic terms, and keep it extremely engaging and clear. Under 150 words. Always respond in English.
     
     Scheme: ${description}`;
-    return callGemini(prompt);
+    return callGemini(prompt, { maxTokens: 1024 });
 };
 
 /**
@@ -64,22 +64,28 @@ const explainLikeIAm15 = async (description) => {
  * Returns an array of {q, a} objects
  */
 const generateFAQs = async (description) => {
-    const prompt = `Generate exactly 5 frequently asked questions with short clear answers about the following government scheme.
-Return ONLY a valid JSON array in this exact format: [{"q": "question", "a": "answer"}]
-Do not include any text before or after the JSON array.
+    const prompt = `Generate exactly 5 frequently asked questions with short, clear answers about the following government scheme.
+
+Rules:
+- Each question should be practical (eligibility, how to apply, benefits, documents needed, deadlines).
+- Each answer should be 1-2 sentences max.
+- Respond in English only.
+- Return ONLY a valid JSON array. No markdown, no code fences, no extra text.
+- Format: [{"q": "question here", "a": "answer here"}]
 
 Scheme: ${description}`;
 
-    const raw = await callGemini(prompt);
+    const raw = await callGemini(prompt, { maxTokens: 1536 });
 
     try {
-        // Extract JSON content between [ and ]
-        const jsonMatch = raw.match(/\[[\s\S]*\]/);
+        // Strip markdown code fences if present
+        const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
         if (!jsonMatch) throw new Error('No JSON array found');
         return JSON.parse(jsonMatch[0]);
-    } catch {
-        // Fallback: return raw text as single FAQ
-        return [{ q: 'What is this scheme about?', a: raw }];
+    } catch (err) {
+        console.error('FAQ parse failed. Raw output:', raw);
+        return [{ q: 'What is this scheme about?', a: raw.replace(/```[\s\S]*```/g, '').trim() }];
     }
 };
 
@@ -108,9 +114,10 @@ Instructions:
 - Answer only if the question is about government schemes, eligibility, or how to apply.
 - If the question is completely unrelated to government schemes, politely say: "I can only help with government scheme related questions. Please ask about schemes, eligibility, or application processes."
 - Keep your response under 150 words.
-- Use simple language that rural citizens can understand.`;
+- Use simple language that rural citizens can understand.
+- Always respond in the same language the user used. If they write in Hindi, respond in Hindi. If English, respond in English.`;
 
-    return callGemini(prompt);
+    return callGemini(prompt, { maxTokens: 1024 });
 };
 
 /**
@@ -143,7 +150,7 @@ Return ONLY the valid JSON object. No other text.
 Raw Text:
 ${rawText}`;
 
-    const raw = await callGemini(prompt, { maxTokens: 1024 });
+    const raw = await callGemini(prompt, { maxTokens: 2048 });
     try {
         const jsonMatch = raw.match(/\{[\s\S]*\}/);
         if (!jsonMatch) throw new Error('No JSON object found');
