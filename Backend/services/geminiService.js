@@ -8,7 +8,7 @@ const GEMINI_API_URL =
  * @param {string} prompt
  * @returns {Promise<string>} Generated text
  */
-const callGemini = async (prompt, retries = 3) => {
+const callGemini = async (prompt, config = {}, retries = 3) => {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('GEMINI_API_KEY not set in environment');
 
@@ -19,7 +19,7 @@ const callGemini = async (prompt, retries = 3) => {
                 {
                     contents: [{ parts: [{ text: prompt }] }],
                     generationConfig: {
-                        maxOutputTokens: 512,
+                        maxOutputTokens: config.maxTokens || 512,
                         temperature: 0.4,
                     },
                 },
@@ -41,13 +41,20 @@ const callGemini = async (prompt, retries = 3) => {
     }
 };
 
-/**
- * Simplify a scheme description into plain language
- */
 const simplifyScheme = async (description) => {
     const prompt = `Summarize the following government scheme in simple language suitable for rural citizens. Use short sentences and bullet points. Keep it under 200 words.
 
 Scheme: ${description}`;
+    return callGemini(prompt);
+};
+
+/**
+ * Explain a scheme like the user is 15 years old
+ */
+const explainLikeIAm15 = async (description) => {
+    const prompt = `Explain the following government scheme as if I am a 15-year old student. Use very simple analogies, basic terms, and keep it extremely engaging and clear. Under 150 words.
+    
+    Scheme: ${description}`;
     return callGemini(prompt);
 };
 
@@ -105,9 +112,52 @@ Instructions:
     return callGemini(prompt);
 };
 
+/**
+ * Extract structured JSON data from raw scraped text
+ */
+const extractSchemeData = async (rawText) => {
+    const prompt = `Following is raw text scraped from a government scheme page. 
+Extract and structure it into a JSON object with the following fields:
+{
+  "name": "Full name of the scheme",
+  "category": "One of: Agriculture, Women, Education, Health, Housing, Labor",
+  "state": "State name or 'all'",
+  "description": "A comprehensive description of the scheme",
+  "summary": "A short 1-sentence summary",
+  "eligibility": {
+    "min_age": number (0 if none),
+    "max_age": number (0 if none),
+    "gender": "male", "female", or "any",
+    "income_limit": number (0 if none),
+    "occupation": "farmer", "student", "laborer", or "any",
+    "state": "State name or 'all'"
+  },
+  "required_documents": ["list", "of", "strings"],
+  "application_process": "Description of how to apply",
+  "official_link": "URL to official portal if found in text"
+}
+
+Return ONLY the valid JSON object. No other text.
+
+Raw Text:
+${rawText}`;
+
+    const raw = await callGemini(prompt, { maxTokens: 1024 });
+    try {
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('No JSON object found');
+        return JSON.parse(jsonMatch[0]);
+    } catch (err) {
+        console.error('Failed to parse Gemini output as JSON:', raw);
+        throw new Error('AI failed to structure scheme data');
+    }
+};
+
 module.exports = {
     simplifyScheme,
     generateFAQs,
     translateContent,
     chatbotResponse,
+    explainLikeIAm15,
+    extractSchemeData,
 };

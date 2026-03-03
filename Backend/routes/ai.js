@@ -6,6 +6,7 @@ const {
     generateFAQs,
     translateContent,
     chatbotResponse,
+    explainLikeIAm15,
 } = require('../services/geminiService');
 const { db } = require('../firebase/firebaseAdmin');
 
@@ -99,6 +100,22 @@ router.post(
         } catch (err) {
             console.error('POST /chatbot error:', err.message);
             res.status(500).json({ success: false, error: 'Chatbot response failed' });
+        }
+    }
+);
+
+// POST /explain-15
+router.post(
+    '/explain-15',
+    [body('description').notEmpty().withMessage('description is required')],
+    async (req, res) => {
+        if (!validate(req, res)) return;
+        try {
+            const explanation = await explainLikeIAm15(req.body.description);
+            res.json({ success: true, data: explanation });
+        } catch (err) {
+            console.error('POST /explain-15 error:', err.message);
+            res.status(500).json({ success: false, error: 'Explain like I am 15 failed' });
         }
     }
 );

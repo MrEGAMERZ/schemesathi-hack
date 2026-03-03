@@ -300,7 +300,11 @@ async function seedSchemes() {
                 .replace(/^-|-$/g, '')
                 .substring(0, 50);
 
-            await collection.doc(id).set(scheme);
+            await collection.doc(id).set({
+                ...scheme,
+                verified: true,
+                last_updated: new Date().toISOString().split('T')[0],
+            });
             console.log(`✅ Seeded: ${scheme.name}`);
         } catch (err) {
             console.error(`❌ Failed to seed "${scheme.name}":`, err.message);

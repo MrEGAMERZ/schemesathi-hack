@@ -12,8 +12,33 @@
     gap: 0.6rem;
 }
 
-.scheme-card__badge {
-    align-self: flex-start;
+.scheme-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.scheme-card__save {
+    background: transparent;
+    border: none;
+    color: var(--gray-300);
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 1.1rem;
+    transition: transform 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scheme-card__save:hover {
+    color: var(--blue-500);
+    transform: scale(1.1);
+}
+
+.scheme-card__save--active {
+    color: var(--blue-600) !important;
 }
 
 .scheme-card__name {

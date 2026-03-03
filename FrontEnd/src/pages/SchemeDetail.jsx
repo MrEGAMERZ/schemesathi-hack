@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FaArrowLeft, FaExternalLinkAlt, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaArrowLeft, FaExternalLinkAlt, FaCheckCircle, FaTimesCircle, FaShareAlt } from 'react-icons/fa';
 import {
     getSchemeById,
     simplify,
     checkEligibility,
     generateFAQ,
     translate,
+    explain15,
 } from '../services/api';
 import './SchemeDetail.css';
 
@@ -29,17 +30,48 @@ function OverviewTab({ scheme }) {
     const [simplified, setSimplified] = useState('');
     const [translated, setTranslated] = useState('');
     const [language, setLanguage] = useState('English');
+    const [isChildMode, setIsChildMode] = useState(false);
     const [loadingSimplify, setLoadingSimplify] = useState(false);
     const [loadingTranslate, setLoadingTranslate] = useState(false);
 
     useEffect(() => {
         if (!scheme) return;
-        setLoadingSimplify(true);
-        simplify(scheme.description)
-            .then((res) => { setSimplified(res.data); setTranslated(res.data); })
-            .catch(() => setSimplified('Could not simplify. Please check backend connection.'))
-            .finally(() => setLoadingSimplify(false));
+        handleReset();
     }, [scheme]);
+
+    const handleReset = async () => {
+        setLoadingSimplify(true);
+        try {
+            const res = await simplify(scheme.description);
+            setSimplified(res.data);
+            setTranslated(res.data);
+            setLanguage('English');
+            setIsChildMode(false);
+        } catch {
+            setSimplified('Could not simplify. Please check backend connection.');
+        } finally {
+            setLoadingSimplify(false);
+        }
+    };
+
+    const handleChildMode = async () => {
+        if (isChildMode) {
+            handleReset();
+            return;
+        }
+        setLoadingSimplify(true);
+        try {
+            const res = await explain15(scheme.description);
+            setSimplified(res.data);
+            setTranslated(res.data);
+            setLanguage('English');
+            setIsChildMode(true);
+        } catch {
+            setSimplified('Could not generate explanation.');
+        } finally {
+            setLoadingSimplify(false);
+        }
+    };
 
     const handleLanguage = async (lang) => {
         setLanguage(lang);
@@ -58,19 +90,41 @@ function OverviewTab({ scheme }) {
 
     return (
         <div className="tab-content fade-in">
-            <div className="overview__controls">
-                <h3 className="tab-heading">AI Simplified Explanation</h3>
-                <div className="lang-selector">
-                    <label className="label">Language:</label>
-                    <select
-                        className="input select"
-                        value={language}
-                        onChange={(e) => handleLanguage(e.target.value)}
-                        disabled={loadingSimplify || loadingTranslate}
-                    >
-                        {LANGUAGES.map((l) => <option key={l}>{l}</option>)}
-                    </select>
+            <div className="ai-disclaimer-box">
+                <span style={{ fontSize: '1.2rem' }}>🤖</span>
+                <div>
+                    <strong>AI Generated:</strong> This explanation is created by AI for better understanding.
+                    Always refer to the <strong>Read More</strong> tab for official government text.
                 </div>
+            </div>
+
+            <div className="overview__controls">
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <h3 className="tab-heading" style={{ margin: 0 }}>
+                        {isChildMode ? 'Simple Explanation (15+ Mode)' : 'AI Simplified Explanation'}
+                    </h3>
+                    <button
+                        className={`btn ${isChildMode ? 'btn-primary' : 'btn-outline'}`}
+                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                        onClick={handleChildMode}
+                        disabled={loadingSimplify}
+                    >
+                        {isChildMode ? '✨ Normal Mode' : '🧒 Explain like I am 15'}
+                    </button>
+                </div>
+                {!isChildMode && (
+                    <div className="lang-selector">
+                        <label className="label">Language:</label>
+                        <select
+                            className="input select"
+                            value={language}
+                            onChange={(e) => handleLanguage(e.target.value)}
+                            disabled={loadingSimplify || loadingTranslate}
+                        >
+                            {LANGUAGES.map((l) => <option key={l}>{l}</option>)}
+                        </select>
+                    </div>
+                )}
             </div>
 
             {loadingSimplify ? (
@@ -341,8 +395,34 @@ export default function SchemeDetail() {
                         {scheme.state && scheme.state !== 'all' && (
                             <span className="badge badge-blue">{scheme.state}</span>
                         )}
+                        {scheme.verified && (
+                            <span className="badge badge-verified">
+                                <FaCheckCircle size={12} /> Admin Verified
+                            </span>
+                        )}
+                        {scheme.last_updated && (
+                            <span className="detail__updated">
+                                🕒 Updated: {scheme.last_updated}
+                            </span>
+                        )}
                     </div>
-                    <h1 className="detail__title">{scheme.name}</h1>
+                    <div className="detail__header-row">
+                        <h1 className="detail__title">{scheme.name}</h1>
+                        <button className="btn btn-outline detail__share" onClick={() => {
+                            if (navigator.share) {
+                                navigator.share({
+                                    title: scheme.name,
+                                    text: `Check out this government scheme: ${scheme.name}`,
+                                    url: window.location.href,
+                                }).catch(() => { });
+                            } else {
+                                navigator.clipboard.writeText(window.location.href);
+                                alert('Link copied to clipboard!');
+                            }
+                        }}>
+                            <FaShareAlt /> Share
+                        </button>
+                    </div>
                     {scheme.summary && <p className="detail__summary">{scheme.summary}</p>}
                 </div>
             </div>

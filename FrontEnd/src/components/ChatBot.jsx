@@ -105,6 +105,9 @@ export default function ChatBot() {
                             <FaPaperPlane />
                         </button>
                     </div>
+                    <div className="chatbot-disclaimer" style={{ fontSize: '0.65rem', textAlign: 'center', color: 'var(--gray-400)', padding: '0.4rem', borderTop: '1px solid var(--gray-100)' }}>
+                        AI-generated guidance. Verify with official links.
+                    </div>
                 </div>
             )}
         </>

@@ -79,7 +79,6 @@ Generated when user requests:
 - Chatbot responses
 - Simplified explanations (if needed)
 - Compare two schemes
-- "Explain like I am 15" mode
 
 These are not stored permanently.
 

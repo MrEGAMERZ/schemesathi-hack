@@ -1,0 +1,141 @@
+.compare__header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.compare__header h1 {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--gray-900);
+}
+
+.compare__header p {
+    color: var(--gray-500);
+}
+
+.compare__selectors {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.compare__select-box {
+    flex: 1;
+    max-width: 350px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.compare__select-box label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-600);
+}
+
+.compare__vs {
+    font-size: 2rem;
+    color: var(--gray-300);
+    padding-top: 1.5rem;
+}
+
+.compare__table {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.compare-row {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.compare-row__label {
+    background: var(--gray-50);
+    padding: 1rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--gray-600);
+    display: flex;
+    align-items: center;
+    border-right: 1px solid var(--gray-100);
+}
+
+.compare-row__values {
+    display: flex;
+}
+
+.compare-row__val {
+    flex: 1;
+    padding: 1rem;
+    font-size: 0.9rem;
+    color: var(--gray-800);
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.compare-row__val:first-child {
+    border-right: 1px solid var(--gray-100);
+}
+
+.compare__details {
+    display: flex;
+    background: var(--gray-50);
+    padding: 1.5rem;
+    gap: 1.5rem;
+}
+
+.compare__detail-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.compare__detail-side h4 {
+    font-size: 0.9rem;
+    color: var(--gray-900);
+}
+
+.compare__detail-side p {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    line-height: 1.5;
+}
+
+.compare__placeholder {
+    padding: 4rem 2rem;
+    text-align: center;
+    color: var(--gray-400);
+    font-style: italic;
+}
+
+.icon-green {
+    color: var(--green-500);
+}
+
+.icon-red {
+    color: var(--red-500);
+}
+
+@media (max-width: 600px) {
+    .compare__selectors {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .compare__vs {
+        display: none;
+    }
+
+    .compare-row {
+        grid-template-columns: 100px 1fr;
+    }
+}

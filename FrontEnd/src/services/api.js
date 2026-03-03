@@ -25,5 +25,18 @@ export const simplify = (description) => api.post('/simplify', { description });
 export const translate = (content, language) => api.post('/translate', { content, language });
 export const generateFAQ = (description) => api.post('/generate-faq', { description });
 export const chatbot = (query) => api.post('/chatbot', { query });
+export const explain15 = (description) => api.post('/explain-15', { description });
+
+// Admin methods
+export const scrapeURL = (url, password) =>
+    api.post('/admin/scrape', { url }, { headers: { 'x-admin-password': password } });
+export const getPending = (password) =>
+    api.get('/admin/pending', { headers: { 'x-admin-password': password } });
+export const approveScheme = (id, password) =>
+    api.post(`/admin/approve/${id}`, {}, { headers: { 'x-admin-password': password } });
+export const rejectScheme = (id, password) =>
+    api.post(`/admin/reject/${id}`, {}, { headers: { 'x-admin-password': password } });
+export const getAdminStats = (password) =>
+    api.get('/admin/stats', { headers: { 'x-admin-password': password } });
 
 export default api;

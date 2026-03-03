@@ -6,6 +6,7 @@ const schemesRouter = require('./routes/schemes');
 const eligibilityRouter = require('./routes/eligibility');
 const recommendRouter = require('./routes/recommend');
 const aiRouter = require('./routes/ai');
+const adminRouter = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -28,7 +29,7 @@ app.use(
       }
     },
     methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type'],
+    allowedHeaders: ['Content-Type', 'x-admin-password'],
   })
 );
 
@@ -38,6 +39,7 @@ app.use(express.json({ limit: '2mb' }));
 app.use('/schemes', schemesRouter);
 app.use('/eligibility-check', eligibilityRouter);
 app.use('/recommend', recommendRouter);
+app.use('/admin', adminRouter);
 app.use('/', aiRouter);
 
 // ── Health check ─────────────────────────────────────────────────────────────

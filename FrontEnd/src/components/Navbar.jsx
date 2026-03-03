@@ -17,6 +17,12 @@ export default function Navbar() {
                     <NavLink to="/recommend" className={({ isActive }) => isActive ? 'active' : ''}>
                         Find Schemes
                     </NavLink>
+                    <NavLink to="/compare" className={({ isActive }) => isActive ? 'active' : ''}>
+                        Compare
+                    </NavLink>
+                    <NavLink to="/saved" className={({ isActive }) => isActive ? 'active' : ''}>
+                        Saved
+                    </NavLink>
                 </nav>
             </div>
         </header>
