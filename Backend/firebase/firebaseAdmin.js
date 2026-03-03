@@ -1,10 +1,6 @@
 const admin = require('firebase-admin');
 
-let db;
-
 const initFirebase = () => {
-    if (admin.apps.length > 0) return admin.firestore();
-
     try {
         let serviceAccount;
 
@@ -16,18 +12,24 @@ const initFirebase = () => {
             serviceAccount = require('./serviceAccountKey.json');
         }
 
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-        });
+        if (admin.apps.length === 0) {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+                storageBucket: `${serviceAccount.project_id}.appspot.com`
+            });
+            console.log('✅ Firebase Admin SDK initialized');
+        }
 
-        console.log('✅ Firebase Admin SDK initialized');
-        return admin.firestore();
+        return {
+            db: admin.firestore(),
+            bucket: admin.storage().bucket()
+        };
     } catch (err) {
         console.error('❌ Firebase initialization failed:', err.message);
         throw err;
     }
 };
 
-db = initFirebase();
+const { db, bucket } = initFirebase();
 
-module.exports = { db, admin };
+module.exports = { db, admin, bucket };

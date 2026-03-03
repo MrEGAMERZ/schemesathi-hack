@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
-const { db } = require('../firebase/firebaseAdmin');
+const { db, bucket } = require('../firebase/firebaseAdmin');
 const { extractSchemeData, translateContent } = require('../services/geminiService');
 const { scrapeWithPuppeteer } = require('../services/scraperService');
 
@@ -44,10 +44,23 @@ router.post(
             console.log(`[Admin Scraper] Text extracted (${text.length} chars). Running Gemini extraction...`);
             const structuredData = await extractSchemeData(text.substring(0, 15000));
 
+            // -- NEW: Upload screenshot to Firebase Storage --
+            let screenshotUrl = null;
+            if (screenshot) {
+                const fileName = `screenshots/${Date.now()}_scraped.png`;
+                const file = bucket.file(fileName);
+                const buffer = Buffer.from(screenshot.split(',')[1], 'base64');
+
+                await file.save(buffer, { contentType: 'image/png' });
+                await file.makePublic();
+                screenshotUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+                console.log(`[Admin Scraper] Screenshot uploaded: ${screenshotUrl}`);
+            }
+
             const pendingScheme = {
                 ...structuredData,
                 source_url: url,
-                screenshot_url: screenshot,
+                screenshot_url: screenshotUrl,
                 status: 'pending',
                 created_at: new Date().toISOString(),
             };
@@ -58,7 +71,7 @@ router.post(
             res.json({
                 success: true,
                 data: { id: docRef.id, ...pendingScheme },
-                message: 'Scheme scraped with Puppeteer + AI. Ready for review.',
+                message: 'Scheme scraped and stored (Media in Cloud Storage).',
             });
         } catch (err) {
             console.error('[Admin Scraper] Error:', err.message);
@@ -113,8 +126,17 @@ router.post('/approve/:id', async (req, res) => {
             console.warn('[Admin Approve] Translation failed (non-fatal):', tErr.message);
         }
 
-        // Remove screenshot from live schemes (too large for regular queries)
+        // -- NEW: Delete screenshot from storage if it exists --
         const { screenshot_url, ...cleanData } = data;
+        if (screenshot_url) {
+            try {
+                const fileName = screenshot_url.split(`${bucket.name}/`)[1];
+                if (fileName) await bucket.file(fileName).delete();
+                console.log(`[Admin Approve] Deleted storage asset: ${fileName}`);
+            } catch (sErr) {
+                console.warn('[Admin Approve] Storage cleanup failed:', sErr.message);
+            }
+        }
 
         await db.collection('schemes').doc(schemeId).set({
             ...cleanData,
@@ -126,7 +148,7 @@ router.post('/approve/:id', async (req, res) => {
 
         await db.collection('pending_schemes').doc(id).delete();
 
-        res.json({ success: true, message: 'Scheme approved, published & auto-translated.' });
+        res.json({ success: true, message: 'Scheme approved and storage cleaned up.' });
     } catch (err) {
         console.error('[Admin Approve] Error:', err.message);
         res.status(500).json({ success: false, error: 'Approval failed', details: err.message });
@@ -136,8 +158,21 @@ router.post('/approve/:id', async (req, res) => {
 // ── POST /admin/reject/:id ────────────────────────────────────────────────────
 router.post('/reject/:id', async (req, res) => {
     try {
-        await db.collection('pending_schemes').doc(req.params.id).delete();
-        res.json({ success: true, message: 'Scheme rejected and removed.' });
+        const id = req.params.id;
+        const doc = await db.collection('pending_schemes').doc(id).get();
+        if (doc.exists) {
+            const data = doc.data();
+            if (data.screenshot_url) {
+                try {
+                    const fileName = data.screenshot_url.split(`${bucket.name}/`)[1];
+                    if (fileName) await bucket.file(fileName).delete();
+                } catch (sErr) {
+                    console.warn('[Admin Reject] Storage cleanup failed:', sErr.message);
+                }
+            }
+        }
+        await db.collection('pending_schemes').doc(id).delete();
+        res.json({ success: true, message: 'Scheme rejected and storage purged.' });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Rejection failed' });
     }
