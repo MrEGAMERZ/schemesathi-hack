@@ -102,23 +102,28 @@ Content: ${content}`;
 /**
  * Chatbot response — scheme-domain only
  */
-const chatbotResponse = async (query, schemesSummary) => {
-    const prompt = `You are SchemeSathi, a helpful government scheme assistant for Indian citizens.
+const chatbotResponse = async (query, richContext) => {
+    const prompt = `You are SchemeSathi, an expert assistant helping Indian citizens find and understand government welfare schemes.
 
-Here is a summary of available schemes:
-${schemesSummary}
+You have been given REAL data from our database. Use it to give precise, factual answers.
 
-User question: ${query}
+${richContext}
+
+User's question: "${query}"
 
 Instructions:
-- Answer only if the question is about government schemes, eligibility, or how to apply.
-- If the question is completely unrelated to government schemes, politely say: "I can only help with government scheme related questions. Please ask about schemes, eligibility, or application processes."
-- Keep your response under 150 words.
-- Use simple language that rural citizens can understand.
-- Always respond in the same language the user used. If they write in Hindi, respond in Hindi. If English, respond in English.`;
+- Use the "HIGHLY RELEVANT SCHEMES — Full Details" section to give specific answers about eligibility, documents, how to apply, and benefits.
+- Mention specific amounts (like ₹6,000/year), deadlines, and documents when available.
+- If no scheme is relevant, still help by listing related schemes from the brief list.
+- If the question is completely off-topic (not about government schemes), say: "I can only help with government scheme related questions."
+- Keep your response under 200 words.
+- Use simple, friendly language — as if talking to a village elder.
+- Always respond in the SAME language the user used. If they write in Hindi, respond in Hindi.
+- Do NOT make up information. Only use what's in the context above.`;
 
-    return callGemini(prompt, { maxTokens: 1024 });
+    return callGemini(prompt, { maxTokens: 1024, temperature: 0.3 });
 };
+
 
 /**
  * Extract structured JSON data from raw scraped text

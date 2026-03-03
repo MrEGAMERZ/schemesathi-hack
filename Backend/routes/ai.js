@@ -79,23 +79,79 @@ router.post(
     }
 );
 
-// POST /chatbot
+// POST /chatbot — RAG-powered smart context
 router.post(
     '/chatbot',
     [body('query').notEmpty().withMessage('query is required')],
     async (req, res) => {
         if (!validate(req, res)) return;
+        const { query } = req.body;
         try {
-            // Fetch a brief summary of all schemes for context
+            // Step 1: Fetch all schemes from Firestore
             const snapshot = await db.collection('schemes').get();
-            const schemesSummary = snapshot.docs
-                .map((doc) => {
-                    const d = doc.data();
-                    return `- ${d.name} (${d.category}): ${d.description.substring(0, 120)}...`;
-                })
-                .join('\n');
+            const allSchemes = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
 
-            const answer = await chatbotResponse(req.body.query, schemesSummary);
+            // Step 2: Score each scheme by relevance to the query
+            const queryLower = query.toLowerCase();
+            const queryWords = queryLower.split(/\s+/).filter(w => w.length > 3);
+
+            const scored = allSchemes.map(scheme => {
+                let score = 0;
+                const name = (scheme.name || '').toLowerCase();
+                const category = (scheme.category || '').toLowerCase();
+                const description = (scheme.description || '').toLowerCase();
+                const keywords = (scheme.keywords || []).join(' ').toLowerCase();
+
+                // Exact / partial name match = highest priority
+                if (queryLower.includes(name.split(' ')[0]) || name.includes(queryLower)) score += 10;
+                if (category && queryLower.includes(category)) score += 5;
+                queryWords.forEach(word => {
+                    if (name.includes(word)) score += 4;
+                    if (keywords.includes(word)) score += 3;
+                    if (description.includes(word)) score += 1;
+                });
+                return { ...scheme, _score: score };
+            });
+
+            // Step 3: Take top 3 most relevant schemes for full-detail context
+            const topSchemes = scored
+                .filter(s => s._score > 0)
+                .sort((a, b) => b._score - a._score)
+                .slice(0, 3);
+
+            // Step 4: Build rich RAG context
+            let richContext = '';
+
+            if (topSchemes.length > 0) {
+                richContext += '=== HIGHLY RELEVANT SCHEMES — Full Details ===\n';
+                topSchemes.forEach(s => {
+                    richContext += `
+SCHEME: ${s.name}
+Category: ${s.category} | State: ${s.state || 'All India'}
+Summary: ${s.summary || ''}
+Description: ${s.description || ''}
+Eligibility:
+  - Age: ${s.eligibility?.min_age || 0}–${s.eligibility?.max_age || 'any'} years
+  - Gender: ${s.eligibility?.gender || 'any'}
+  - Income Limit: ${s.eligibility?.income_limit ? '₹' + s.eligibility.income_limit : 'No limit'}
+  - Occupation: ${s.eligibility?.occupation || 'any'}
+Required Documents: ${(s.required_documents || []).join(', ') || 'Not specified'}
+How to Apply: ${s.application_process || 'Visit official website'}
+Official Link: ${s.official_link || 'Not available'}
+---`;
+                });
+            }
+
+            // Brief list of all schemes for discovery questions
+            richContext += '\n\n=== ALL AVAILABLE SCHEMES — Brief List ===\n';
+            allSchemes.forEach(s => {
+                richContext += `- ${s.name} (${s.category}): ${(s.summary || s.description || '').substring(0, 100)}\n`;
+            });
+
+            const answer = await chatbotResponse(query, richContext);
             res.json({ success: true, data: answer });
         } catch (err) {
             console.error('POST /chatbot error:', err.message);
