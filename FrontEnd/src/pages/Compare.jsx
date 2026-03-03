@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getSchemes } from '../services/api';
-import { FaVs, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import './Compare.css';
 
 export default function Compare() {
@@ -49,7 +49,7 @@ export default function Compare() {
                         {schemes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                 </div>
-                <div className="compare__vs"><FaVs /></div>
+                <div className="compare__vs" style={{ fontWeight: '800', fontSize: '1.2rem', color: 'var(--gray-300)' }}>VS</div>
                 <div className="compare__select-box">
                     <label>Second Scheme</label>
                     <select className="input select" value={id2} onChange={(e) => setId2(e.target.value)}>
