@@ -30,6 +30,7 @@ const callGemini = async (prompt, config = {}, retries = 3) => {
                 response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
             return text.trim();
         } catch (err) {
+            console.error('Gemini API Error:', err.response?.data || err.message);
             if (attempt === retries) throw err;
             if (err.response?.status === 429) {
                 // Rate limit — wait 2 s before retry
