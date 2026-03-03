@@ -11,3 +11,7 @@ npm-debug.log*
 
 # OS
 .DS_Store
+
+# Scratch / test scripts (never commit these)
+test_*.js
+scratch_*.js
